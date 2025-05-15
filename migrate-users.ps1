@@ -1,30 +1,51 @@
-# migrate-users.ps1
+param (
+    [string]$LocalServer,
+    [string]$RemoteServer,
+    [string]$LocalDB,
+    [string]$RemoteDB,
+    [string]$LocalTable,
+    [string]$RemoteTable,
+    [string]$User,
+    [string]$Password
+)
 
-# SQL Server Credentials and Connection Strings
-$sourceServer = "tcp:10.128.0.16,1433"
-$destServer = "tcp:10.128.0.19,1433"
-$database = "aspnet_DB"
-$username = "sa"
-$password = "P@ssword@123"
+try {
+    Import-Module SqlServer -ErrorAction Stop
+    Write-Host "✅ SqlServer module imported successfully."
+} catch {
+    Write-Error "❌ Failed to import SqlServer module: $_"
+    exit 1
+}
 
-# Load SQL Server module (for older systems, install via Install-Module SqlServer)
-Import-Module SqlServer -ErrorAction Stop
+$sourceConnection = "Server=$LocalServer;Database=$LocalDB;User Id=$User;Password=$Password;TrustServerCertificate=True;"
+$destConnection = "Server=$RemoteServer;Database=$RemoteDB;User Id=$User;Password=$Password;TrustServerCertificate=True;"
 
-# Extract data from VM-1
-$queryExport = "SELECT user_id, user_name, user_email FROM asp_user"
-$sourceConnection = "Server=$sourceServer;Database=$database;User Id=$username;Password=$password;TrustServerCertificate=True;"
+$queryExport = "SELECT user_id, user_name, user_email FROM $LocalTable"
 
-$users = Invoke-Sqlcmd -Query $queryExport -ConnectionString $sourceConnection
-
-# Insert into VM-2
-$destConnection = "Server=$destServer;Database=$database;User Id=$username;Password=$password;TrustServerCertificate=True;"
+try {
+    $users = Invoke-Sqlcmd -Query $queryExport -ConnectionString $sourceConnection -ErrorAction Stop
+    if (!$users) {
+        Write-Warning "⚠️ No users returned from source database."
+        exit 1
+    }
+    Write-Host "✅ Retrieved $($users.Count) users from source."
+} catch {
+    Write-Error "❌ Failed to query source DB: $_"
+    exit 1
+}
 
 foreach ($user in $users) {
     $queryInsert = @"
-    INSERT INTO asp_user (user_id, user_name, user_email)
-    VALUES ('$($user.user_id)', '$($user.user_name)', '$($user.user_email)')
+INSERT INTO $RemoteTable (user_id, user_name, user_email)
+VALUES ('$($user.user_id)', '$($user.user_name)', '$($user.user_email)')
 "@
-    Invoke-Sqlcmd -Query $queryInsert -ConnectionString $destConnection
+
+    try {
+        Invoke-Sqlcmd -Query $queryInsert -ConnectionString $destConnection -ErrorAction Stop
+        Write-Host "✅ Inserted user: $($user.user_id)"
+    } catch {
+        Write-Warning "⚠️ Failed to insert user $($user.user_id): $_"
+    }
 }
 
 Write-Host "✅ Data migration completed successfully."
