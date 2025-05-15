@@ -16,7 +16,7 @@ pipeline {
 stages {
     stage('Checkout Code') {
         steps {
-            git url: 'https://github.com/Navateja-gogula/use_case-3.git', branch: 'main'
+            git url: 'https://github.com/Navateja-gogula/UseCase3-S2S.git', branch: 'main'
         }
     }
 
