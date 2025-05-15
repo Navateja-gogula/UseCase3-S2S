@@ -13,9 +13,9 @@ param (
 
 try {
     Import-Module SqlServer -ErrorAction Stop
-    Write-Host "✅ SqlServer module imported successfully."
+    Write-Host " SqlServer module imported successfully."
 } catch {
-    Write-Error "❌ Failed to import SqlServer module: $_"
+    Write-Error " Failed to import SqlServer module: $_"
     exit 1
 }
 
@@ -27,12 +27,12 @@ $queryExport = "SELECT user_id, user_name, user_email FROM $LocalTable"
 try {
     $users = Invoke-Sqlcmd -Query $queryExport -ConnectionString $sourceConnection -ErrorAction Stop
     if (!$users) {
-        Write-Warning "⚠️ No users returned from source database."
+        Write-Warning "No users returned from source database."
         exit 1
     }
-    Write-Host "✅ Retrieved $($users.Count) users from source."
+    Write-Host "Retrieved $($users.Count) users from source."
 } catch {
-    Write-Error "❌ Failed to query source DB: $_"
+    Write-Error " Failed to query source DB: $_"
     exit 1
 }
 
@@ -44,10 +44,10 @@ VALUES ('$($user.user_id)', '$($user.user_name)', '$($user.user_email)')
 
     try {
         Invoke-Sqlcmd -Query $queryInsert -ConnectionString $destConnection -ErrorAction Stop
-        Write-Host "✅ Inserted user: $($user.user_id)"
+        Write-Host "Inserted user: $($user.user_id)"
     } catch {
-        Write-Warning "⚠️ Failed to insert user $($user.user_id): $_"
+        Write-Warning "Failed to insert user $($user.user_id): $_"
     }
 }
 
-Write-Host "✅ Data migration completed successfully."
+Write-Host "Data migration completed successfully."
