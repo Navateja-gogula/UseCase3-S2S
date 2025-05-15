@@ -9,7 +9,7 @@ pipeline {
         LOCAL_TABLE = 'asp_user'
         REMOTE_TABLE = 'asp_user'
         SA_USER = 'sa'
-        SA_PASS = 'P@ssword@123' // Ideally stored in Jenkins credentials securely
+        SA_PASS = 'P@ssword@123'  // Ideally use Jenkins credentials for this
     }
 
     stages {
@@ -19,31 +19,28 @@ pipeline {
             }
         }
 
-        stage('Install SqlServer Module if Missing') {
-            steps {
-                powershell '''
-                    $module = Get-Module -ListAvailable -Name SqlServer
-                    if (-not $module) {
-                        Write-Host "SqlServer module not found. Attempting to install..."
-                        Install-Module -Name SqlServer -Force -Scope AllUsers -AllowClobber -ErrorAction Stop
-                    } else {
-                        Write-Host "SqlServer module is already installed."
-                    }
-                '''
-            }
-        }
-
         stage('Run PowerShell Script') {
             steps {
                 powershell '''
                     Write-Host "Starting data copy from VM-1 to VM-2..."
 
-                    # Ensure SqlServer module is imported
+                    # Ensure secure connection and install required module
+                    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+                    try {
+                        Install-PackageProvider -Name NuGet -Force -Scope AllUsers
+                        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+                        Install-Module -Name SqlServer -Force -Scope AllUsers -AllowClobber
+                    } catch {
+                        Write-Error "Failed to install SqlServer module. Error: $_"
+                        exit 1
+                    }
+
                     try {
                         Import-Module SqlServer -ErrorAction Stop
                         Write-Host "SqlServer module imported successfully."
                     } catch {
-                        Write-Error "Failed to import SqlServer module. Ensure it's installed system-wide and accessible."
+                        Write-Error "SqlServer module is not available after installation."
                         exit 1
                     }
 
