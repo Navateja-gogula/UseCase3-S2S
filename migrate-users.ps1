@@ -5,8 +5,10 @@ param (
     [string]$RemoteDB,
     [string]$LocalTable,
     [string]$RemoteTable,
-    [string]$User,
-    [string]$Password
+    [string]$LocalUser,
+    [string]$LocalPassword,
+    [string]$RemoteUser,
+    [string]$RemotePassword
 )
 
 try {
@@ -17,8 +19,8 @@ try {
     exit 1
 }
 
-$sourceConnection = "Server=$LocalServer;Database=$LocalDB;User Id=$User;Password=$Password;TrustServerCertificate=True;"
-$destConnection = "Server=$RemoteServer;Database=$RemoteDB;User Id=$User;Password=$Password;TrustServerCertificate=True;"
+$sourceConnection = "Server=$LocalServer;Database=$LocalDB;User Id=$LocalUser;Password=$LocalPassword;TrustServerCertificate=True;"
+$destConnection   = "Server=$RemoteServer;Database=$RemoteDB;User Id=$RemoteUser;Password=$RemotePassword;TrustServerCertificate=True;"
 
 $queryExport = "SELECT user_id, user_name, user_email FROM $LocalTable"
 

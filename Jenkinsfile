@@ -2,14 +2,17 @@ pipeline {
     agent any
 
     environment {
-        LOCAL_SERVER = 'tcp:10.128.0.16,1433'
-        REMOTE_SERVER = 'tcp:10.128.0.19,1433'
-        LOCAL_DB = 'aspnet_DB'
-        REMOTE_DB = 'aspnet_DB'
-        LOCAL_TABLE = 'asp_user'
-        REMOTE_TABLE = 'asp_user'
-        SA_USER = 'sa'
-        SA_PASS = 'P@ssword@123'  // Ideally use Jenkins credentials for this
+        LOCAL_SERVER   = 'tcp:10.128.0.16,1433'
+        REMOTE_SERVER  = 'tcp:10.128.0.19,1433'
+        LOCAL_DB       = 'aspnet_DB'
+        REMOTE_DB      = 'aspnet_DB'
+        LOCAL_TABLE    = 'asp_user'
+        REMOTE_TABLE   = 'asp_user'
+        LOCAL_USER     = 'sa'
+        LOCAL_PASS     = 'P@ssword@123'
+        REMOTE_USER    = 'sa'
+        REMOTE_PASS    = 'Password@123'
+        // ⚠️ Replace with Jenkins credentials for production use
     }
 
     stages {
@@ -24,7 +27,6 @@ pipeline {
                 powershell '''
                     Write-Host "Starting data copy from VM-1 to VM-2..."
 
-                    # Ensure secure connection and install required module
                     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
                     try {
@@ -52,8 +54,10 @@ pipeline {
                             -RemoteDB "$env:REMOTE_DB" `
                             -LocalTable "$env:LOCAL_TABLE" `
                             -RemoteTable "$env:REMOTE_TABLE" `
-                            -User "$env:SA_USER" `
-                            -Password "$env:SA_PASS"
+                            -LocalUser "$env:LOCAL_USER" `
+                            -LocalPassword "$env:LOCAL_PASS" `
+                            -RemoteUser "$env:REMOTE_USER" `
+                            -RemotePassword "$env:REMOTE_PASS"
                     } else {
                         Write-Error "migrate-users.ps1 not found in workspace"
                         exit 1
@@ -65,10 +69,10 @@ pipeline {
 
     post {
         success {
-            echo 'Data migration completed successfully!'
+            echo ' Data migration completed successfully!'
         }
         failure {
-            echo 'Data migration failed.'
+            echo ' Data migration failed.'
         }
     }
 }
