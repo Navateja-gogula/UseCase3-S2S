@@ -12,12 +12,12 @@ Import-Module SqlServer -ErrorAction Stop
 
 # Extract data from VM-1
 $queryExport = "SELECT user_id, user_name, user_email FROM asp_user"
-$sourceConnection = "Server=$sourceServer;Database=$database;User Id=$username;Password=$password;"
+$sourceConnection = "Server=$sourceServer;Database=$database;User Id=$username;Password=$password;TrustServerCertificate=True;"
 
 $users = Invoke-Sqlcmd -Query $queryExport -ConnectionString $sourceConnection
 
 # Insert into VM-2
-$destConnection = "Server=$destServer;Database=$database;User Id=$username;Password=$password;"
+$destConnection = "Server=$destServer;Database=$database;User Id=$username;Password=$password;TrustServerCertificate=True;"
 
 foreach ($user in $users) {
     $queryInsert = @"
