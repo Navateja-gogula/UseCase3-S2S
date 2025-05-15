@@ -67,12 +67,4 @@ pipeline {
         }
     }
 
-    post {
-        success {
-            echo ' Data migration completed successfully!'
-        }
-        failure {
-            echo ' Data migration failed.'
-        }
-    }
 }
