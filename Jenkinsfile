@@ -2,69 +2,70 @@ pipeline {
     agent any
 
     environment {
-        LOCAL_SERVER   = 'tcp:10.128.0.16,1433'
-        REMOTE_SERVER  = 'tcp:10.128.0.19,1433'
-        LOCAL_DB       = 'aspnet_DB'
-        REMOTE_DB      = 'aspnet_DB'
-        LOCAL_TABLE    = 'asp_user'
-        REMOTE_TABLE   = 'asp_user'
-        LOCAL_USER     = 'sa'
-        LOCAL_PASS     = 'P@ssword@123'
-        REMOTE_USER    = 'sa'
-        REMOTE_PASS    = 'Password@123'
-        // ⚠️ Replace with Jenkins credentials for production use
-    }
+    // Static values
+    LOCAL_DB     = 'aspnet_DB'
+    REMOTE_DB    = 'aspnet_DB'
+    LOCAL_TABLE  = 'asp_user'
+    REMOTE_TABLE = 'asp_user'
+    LOCAL_USER   = 'sa'
+    REMOTE_USER  = 'sa'
 
-    stages {
-        stage('Checkout Code') {
-            steps {
-                git url: 'https://github.com/Navateja-gogula/UseCase3-S2S.git', branch: 'main'
-            }
-        }
+    // Injected from Jenkins credentials (IDs must match)
+    LOCAL_SERVER = credentials('LOCAL_SERVER')
+    REMOTE_SERVER = credentials('REMOTE_SERVER')
+    LOCAL_PASS = credentials('LOCAL_PASS')
+    REMOTE_PASS = credentials('REMOTE_PASS')
+}
 
-        stage('Run PowerShell Script') {
-            steps {
-                powershell '''
-                    Write-Host "Starting data copy from VM-1 to VM-2..."
-
-                    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-                    try {
-                        Install-PackageProvider -Name NuGet -Force -Scope AllUsers
-                        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-                        Install-Module -Name SqlServer -Force -Scope AllUsers -AllowClobber
-                    } catch {
-                        Write-Error "Failed to install SqlServer module. Error: $_"
-                        exit 1
-                    }
-
-                    try {
-                        Import-Module SqlServer -ErrorAction Stop
-                        Write-Host "SqlServer module imported successfully."
-                    } catch {
-                        Write-Error "SqlServer module is not available after installation."
-                        exit 1
-                    }
-
-                    if (Test-Path "./migrate-users.ps1") {
-                        ./migrate-users.ps1 `
-                            -LocalServer "$env:LOCAL_SERVER" `
-                            -RemoteServer "$env:REMOTE_SERVER" `
-                            -LocalDB "$env:LOCAL_DB" `
-                            -RemoteDB "$env:REMOTE_DB" `
-                            -LocalTable "$env:LOCAL_TABLE" `
-                            -RemoteTable "$env:REMOTE_TABLE" `
-                            -LocalUser "$env:LOCAL_USER" `
-                            -LocalPassword "$env:LOCAL_PASS" `
-                            -RemoteUser "$env:REMOTE_USER" `
-                            -RemotePassword "$env:REMOTE_PASS"
-                    } else {
-                        Write-Error "migrate-users.ps1 not found in workspace"
-                        exit 1
-                    }
-                '''
-            }
+stages {
+    stage('Checkout Code') {
+        steps {
+            git url: 'https://github.com/Navateja-gogula/UseCase3-S2S.git', branch: 'main'
         }
     }
 
+    stage('Run PowerShell Script') {
+        steps {
+            powershell '''
+                Write-Host "Starting data copy from VM-1 to VM-2..."
+
+                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+                try {
+                    Install-PackageProvider -Name NuGet -Force -Scope AllUsers
+                    Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+                    Install-Module -Name SqlServer -Force -Scope AllUsers -AllowClobber
+                } catch {
+                    Write-Error "Failed to install SqlServer module. Error: $_"
+                    exit 1
+                }
+
+                try {
+                    Import-Module SqlServer -ErrorAction Stop
+                    Write-Host "SqlServer module imported successfully."
+                } catch {
+                    Write-Error "SqlServer module is not available after installation."
+                    exit 1
+                }
+
+                if (Test-Path "./migrate-users.ps1") {
+                    ./migrate-users.ps1 `
+                        -LocalServer "$env:LOCAL_SERVER" `
+                        -RemoteServer "$env:REMOTE_SERVER" `
+                        -LocalDB "$env:LOCAL_DB" `
+                        -RemoteDB "$env:REMOTE_DB" `
+                        -LocalTable "$env:LOCAL_TABLE" `
+                        -RemoteTable "$env:REMOTE_TABLE" `
+                        -LocalUser "$env:LOCAL_USER" `
+                        -LocalPassword "$env:LOCAL_PASS" `
+                        -RemoteUser "$env:REMOTE_USER" `
+                        -RemotePassword "$env:REMOTE_PASS"
+                } else {
+                    Write-Error "migrate-users.ps1 not found in workspace"
+                    exit 1
+                }
+            '''
+        }
+    }
+}
 }
