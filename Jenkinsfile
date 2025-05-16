@@ -25,47 +25,39 @@ stages {
     }
 
     stage('Run PowerShell Script') {
-        steps {
-            powershell '''
-                Write-Host "Starting data copy from VM-1 to VM-2..."
+    steps {
+        powershell '''
+            Write-Host "Starting data copy from VM-1 to VM-2..."
 
-                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-                try {
-                    Install-PackageProvider -Name NuGet -Force -Scope AllUsers
-                    Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-                    Install-Module -Name SqlServer -Force -Scope AllUsers -AllowClobber
-                } catch {
-                    Write-Error "Failed to install SqlServer module. Error: $_"
-                    exit 1
-                }
+            try {
+                Import-Module SqlServer -ErrorAction Stop
+                Write-Host "SqlServer module imported successfully."
+            } catch {
+                Write-Error "SqlServer module is not available."
+                exit 1
+            }
 
-                try {
-                    Import-Module SqlServer -ErrorAction Stop
-                    Write-Host "SqlServer module imported successfully."
-                } catch {
-                    Write-Error "SqlServer module is not available after installation."
-                    exit 1
-                }
-
-                if (Test-Path "./migrate-users.ps1") {
-                    ./migrate-users.ps1 `
-                        -LocalServer "$env:LOCAL_SERVER" `
-                        -RemoteServer "$env:REMOTE_SERVER" `
-                        -LocalDB "$env:LOCAL_DB" `
-                        -RemoteDB "$env:REMOTE_DB" `
-                        -LocalTable "$env:LOCAL_TABLE" `
-                        -RemoteTable "$env:REMOTE_TABLE" `
-                        -LocalUser "$env:LOCAL_USER" `
-                        -LocalPassword "$env:LOCAL_PASS" `
-                        -RemoteUser "$env:REMOTE_USER" `
-                        -RemotePassword "$env:REMOTE_PASS"
-                } else {
-                    Write-Error "migrate-users.ps1 not found in workspace"
-                    exit 1
-                }
-            '''
-        }
+            if (Test-Path "./migrate-users.ps1") {
+                ./migrate-users.ps1 `
+                    -LocalServer "$env:LOCAL_SERVER" `
+                    -RemoteServer "$env:REMOTE_SERVER" `
+                    -LocalDB "$env:LOCAL_DB" `
+                    -RemoteDB "$env:REMOTE_DB" `
+                    -LocalTable "$env:LOCAL_TABLE" `
+                    -RemoteTable "$env:REMOTE_TABLE" `
+                    -LocalUser "$env:LOCAL_USER" `
+                    -LocalPassword "$env:LOCAL_PASS" `
+                    -RemoteUser "$env:REMOTE_USER" `
+                    -RemotePassword "$env:REMOTE_PASS"
+            } else {
+                Write-Error "migrate-users.ps1 not found in workspace"
+                exit 1
+            }
+        '''
     }
+}
+
 }
 }
